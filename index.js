@@ -4,7 +4,6 @@ var app = express();
 var exec=require('child_process').exec;
 var port = 7000
 var axios = require('axios');
-var fs = require("fs");
 var fs = require('fs'),
     path = require('path');
 app.use(cors())
@@ -128,7 +127,51 @@ app.post("/publica", function(req, res) {
             });
             
         });
+app.post("/firmar",function(req, res){
+let certificado = req.body.certificado
+let id = req.body.id
 
+fs.appendFile(`firma${id}.crt`, certificado, function (err) {
+
+if (err) {
+console.log(err)
+// Falló la escritura
+
+} else {
+console.log("Se subio con exito")
+// Todo OK
+
+}
+
+});
+
+setTimeout(function(){
+    let comando = `openssl x509 -CA CA.crt -CAkey private_key.key -in firma${id}.crt -out firmado${id}.crt && cat firmado${id}.crt`
+        //console.log(comando)
+        script = exec(comando);
+        // what to do for data coming from the standard out
+        script.stdout.on('data', function(data){     
+            console.log(data.toString());
+            //Enviamos el archivo
+            res.setHeader("Content-disposition", `attachment; filename=certificado.key`);
+            res.setHeader("Content-type", "text/plain");
+            res.charset = "UTF-8";
+            res.write(data.toString());
+            res.end();
+        });
+
+        // what to do with data coming from the standard error
+        script.stderr.on('data', function(data){
+            console.log(data.toString());
+        });
+        // what to do when the command is done
+        script.on('exit', function(code){
+            console.log('program ended with code: ' + code);
+        });
+},1000);
+
+
+});
 app.post("/test", function(req, res) {
     
             //recibimos parametros de sesion    

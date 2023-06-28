@@ -3,11 +3,17 @@ var cors = require('cors')
 var app = express();
 var exec=require('child_process').exec;
 var port = 7000
+var axios = require('axios');
+var fs = require("fs");
+var fs = require('fs'),
+    path = require('path');
 app.use(cors())
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
+var certificado = ""
+var certificadoBase64 = ""
 
 app.post("/privada", function(req, res) {
     
@@ -50,7 +56,33 @@ app.post("/privada", function(req, res) {
         script.on('exit', function(code){
             console.log('program ended with code: ' + code);
         });
-        
+  //parte comunicacion entre servicios
+  setTimeout(function(){
+    var filePath = path.join(__dirname, `cert${id}.pem`);
+    fs.readFile(filePath, {encoding: 'utf-8'}, function(err,data){
+        if (!err) {
+              certificado = data
+            console.log('received data: ' + data);
+        } else {
+            console.log(err);
+        }
+    });
+  certificadoBase64 = btoa(certificado)
+    axios({
+        url: 'http://172.16.214.73:8080/alta/certificado', //your url
+          method: 'POST',
+              data:{
+                  certificado:certificadoBase64,
+                        },
+                            //responseType: 'json', // important
+                            }).then(response => 
+                              console.log(response.data)
+                              );
+
+  },5000) 
+ 
+
+
     });
     
 app.post("/publica", function(req, res) {
